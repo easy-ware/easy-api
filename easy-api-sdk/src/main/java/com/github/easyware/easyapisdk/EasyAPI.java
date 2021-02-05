@@ -39,9 +39,9 @@ import java.beans.IntrospectionException;
 import java.lang.reflect.Type;
 import java.util.*;
 
-@RestController
-public class OpenAPIController implements BeanFactoryAware {
-    private static Logger logger = LoggerFactory.getLogger(OpenAPIController.class);
+//@RestController
+public class EasyAPI  {
+    private static Logger logger = LoggerFactory.getLogger(EasyAPI.class);
     private static String CONTENT_TYPE_JSON = "application/json";
     private static Class errorControllerClass;
     static {
@@ -53,10 +53,10 @@ public class OpenAPIController implements BeanFactoryAware {
     }
     //@Autowired
     //ParameterNameDiscoverer parameterNameDiscoverer;
-    private Class[] ignoreParamTypes = new Class[]{javax.servlet.ServletRequest.class,
+    private static Class[] ignoreParamTypes = new Class[]{javax.servlet.ServletRequest.class,
             javax.servlet.ServletResponse.class,
             javax.servlet.http.HttpServletRequest.class,
-            javax.servlet.http.HttpServletResponse.class,
+            HttpServletResponse.class,
             javax.servlet.http.HttpSession.class,
             javax.servlet.http.HttpSession.class,
             WebRequest.class,
@@ -79,7 +79,7 @@ public class OpenAPIController implements BeanFactoryAware {
             SessionStatus.class,
             UriComponentsBuilder.class,
             RequestAttribute.class};
-    private Set<Class> ignoreParamTypeSet = new HashSet<>(Arrays.asList(ignoreParamTypes));
+    private static Set<Class> ignoreParamTypeSet = new HashSet<>(Arrays.asList(ignoreParamTypes));
 
     private static Map<String, String[]> dataTypeMap = new HashMap() {{
         put("byte", new String[]{"integer", "int32"});
@@ -95,14 +95,13 @@ public class OpenAPIController implements BeanFactoryAware {
 
     }};
 
-    private DefaultParameterNameDiscoverer discoverer = new DefaultParameterNameDiscoverer();
+    private static DefaultParameterNameDiscoverer discoverer = new DefaultParameterNameDiscoverer();
 
+    //@Autowired
+    //private RequestMappingHandlerMapping handlerMapping;
 
-    @Autowired
-    private RequestMappingHandlerMapping handlerMapping;
-
-    @RequestMapping(value = "/mappings")
-    public String mappings() throws Exception {
+    //@RequestMapping(value = "/mappings")
+    public String handlerMappings(RequestMappingHandlerMapping handlerMapping) throws Exception {
         OpenAPI openAPI = new OpenAPI();
         Info info = new Info();
         info.version("1.0.0").title("wap-m");
@@ -386,195 +385,4 @@ public class OpenAPIController implements BeanFactoryAware {
     }
 
 
-    @RequestMapping(value = "/pet")
-    public String pet(HttpServletResponse response) {
-        //Access-Control-Allow-*
-        response.setHeader("Access-Control-Allow-Origin", "*");
-
-        response.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
-        response.setHeader("Access-Control-Allow-Headers", "Content-Type, api_key, Authorization");
-        return "{\n" +
-                "  \"openapi\": \"3.0.0\",\n" +
-                "  \"info\": {\n" +
-                "    \"version\": \"1.0.0\",\n" +
-                "    \"title\": \"Swagger Petstore\",\n" +
-                "    \"license\": {\n" +
-                "      \"name\": \"MIT\"\n" +
-                "    }\n" +
-                "  },\n" +
-                "  \"servers\": [\n" +
-                "    {\n" +
-                "      \"url\": \"http://petstore.swagger.io/v1\"\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"paths\": {\n" +
-                "    \"/pets\": {\n" +
-                "      \"get\": {\n" +
-                "        \"summary\": \"List all pets\",\n" +
-                "        \"operationId\": \"listPets\",\n" +
-                "        \"tags\": [\n" +
-                "          \"pets\"\n" +
-                "        ],\n" +
-                "        \"parameters\": [\n" +
-                "          {\n" +
-                "            \"name\": \"limit\",\n" +
-                "            \"in\": \"query\",\n" +
-                "            \"description\": \"How many items to return at one time (max 100)\",\n" +
-                "            \"required\": false,\n" +
-                "            \"schema\": {\n" +
-                "              \"type\": \"integer\",\n" +
-                "              \"format\": \"int32\"\n" +
-                "            }\n" +
-                "          }\n" +
-                "        ],\n" +
-                "        \"responses\": {\n" +
-                "          \"200\": {\n" +
-                "            \"description\": \"A paged array of pets\",\n" +
-                "            \"headers\": {\n" +
-                "              \"x-next\": {\n" +
-                "                \"description\": \"A link to the next page of responses\",\n" +
-                "                \"schema\": {\n" +
-                "                  \"type\": \"string\"\n" +
-                "                }\n" +
-                "              }\n" +
-                "            },\n" +
-                "            \"content\": {\n" +
-                "              \"application/json\": {\n" +
-                "                \"schema\": {\n" +
-                "                  \"$ref\": \"#/components/schemas/Pets\"\n" +
-                "                }\n" +
-                "              }\n" +
-                "            }\n" +
-                "          },\n" +
-                "          \"default\": {\n" +
-                "            \"description\": \"unexpected error\",\n" +
-                "            \"content\": {\n" +
-                "              \"application/json\": {\n" +
-                "                \"schema\": {\n" +
-                "                  \"$ref\": \"#/components/schemas/Error\"\n" +
-                "                }\n" +
-                "              }\n" +
-                "            }\n" +
-                "          }\n" +
-                "        }\n" +
-                "      },\n" +
-                "      \"post\": {\n" +
-                "        \"summary\": \"Create a pet\",\n" +
-                "        \"operationId\": \"createPets\",\n" +
-                "        \"tags\": [\n" +
-                "          \"pets\"\n" +
-                "        ],\n" +
-                "        \"responses\": {\n" +
-                "          \"201\": {\n" +
-                "            \"description\": \"Null response\"\n" +
-                "          },\n" +
-                "          \"default\": {\n" +
-                "            \"description\": \"unexpected error\",\n" +
-                "            \"content\": {\n" +
-                "              \"application/json\": {\n" +
-                "                \"schema\": {\n" +
-                "                  \"$ref\": \"#/components/schemas/Error\"\n" +
-                "                }\n" +
-                "              }\n" +
-                "            }\n" +
-                "          }\n" +
-                "        }\n" +
-                "      }\n" +
-                "    },\n" +
-                "    \"/pets/{petId}\": {\n" +
-                "      \"get\": {\n" +
-                "        \"summary\": \"Info for a specific pet\",\n" +
-                "        \"operationId\": \"showPetById\",\n" +
-                "        \"tags\": [\n" +
-                "          \"pets\"\n" +
-                "        ],\n" +
-                "        \"parameters\": [\n" +
-                "          {\n" +
-                "            \"name\": \"petId\",\n" +
-                "            \"in\": \"path\",\n" +
-                "            \"required\": true,\n" +
-                "            \"description\": \"The id of the pet to retrieve\",\n" +
-                "            \"schema\": {\n" +
-                "              \"type\": \"string\"\n" +
-                "            }\n" +
-                "          }\n" +
-                "        ],\n" +
-                "        \"responses\": {\n" +
-                "          \"200\": {\n" +
-                "            \"description\": \"Expected response to a valid request\",\n" +
-                "            \"content\": {\n" +
-                "              \"application/json\": {\n" +
-                "                \"schema\": {\n" +
-                "                  \"$ref\": \"#/components/schemas/Pet\"\n" +
-                "                }\n" +
-                "              }\n" +
-                "            }\n" +
-                "          },\n" +
-                "          \"default\": {\n" +
-                "            \"description\": \"unexpected error\",\n" +
-                "            \"content\": {\n" +
-                "              \"application/json\": {\n" +
-                "                \"schema\": {\n" +
-                "                  \"$ref\": \"#/components/schemas/Error\"\n" +
-                "                }\n" +
-                "              }\n" +
-                "            }\n" +
-                "          }\n" +
-                "        }\n" +
-                "      }\n" +
-                "    }\n" +
-                "  },\n" +
-                "  \"components\": {\n" +
-                "    \"schemas\": {\n" +
-                "      \"Pet\": {\n" +
-                "        \"type\": \"object\",\n" +
-                "        \"required\": [\n" +
-                "          \"id\",\n" +
-                "          \"name\"\n" +
-                "        ],\n" +
-                "        \"properties\": {\n" +
-                "          \"id\": {\n" +
-                "            \"type\": \"integer\",\n" +
-                "            \"format\": \"int64\"\n" +
-                "          },\n" +
-                "          \"name\": {\n" +
-                "            \"type\": \"string\"\n" +
-                "          },\n" +
-                "          \"tag\": {\n" +
-                "            \"type\": \"string\"\n" +
-                "          }\n" +
-                "        }\n" +
-                "      },\n" +
-                "      \"Pets\": {\n" +
-                "        \"type\": \"array\",\n" +
-                "        \"items\": {\n" +
-                "          \"$ref\": \"#/components/schemas/Pet\"\n" +
-                "        }\n" +
-                "      },\n" +
-                "      \"Error\": {\n" +
-                "        \"type\": \"object\",\n" +
-                "        \"required\": [\n" +
-                "          \"code\",\n" +
-                "          \"message\"\n" +
-                "        ],\n" +
-                "        \"properties\": {\n" +
-                "          \"code\": {\n" +
-                "            \"type\": \"integer\",\n" +
-                "            \"format\": \"int32\"\n" +
-                "          },\n" +
-                "          \"message\": {\n" +
-                "            \"type\": \"string\"\n" +
-                "          }\n" +
-                "        }\n" +
-                "      }\n" +
-                "    }\n" +
-                "  }\n" +
-                "}";
-    }
-
-    @Override
-    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
-        AbstractAutowireCapableBeanFactory f = (AbstractAutowireCapableBeanFactory) beanFactory;
-        // f.getd
-    }
 }
