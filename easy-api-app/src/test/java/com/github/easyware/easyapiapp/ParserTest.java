@@ -210,7 +210,7 @@ public class ParserTest {
         CommentParser commentParser = new CommentParser();
         File file=new File("/Users/apple/workspace/");
         //file=new File("/Users/apple/github/easy-api/easy-api-app/src/test/java/com/github/easyware/easyapiapp")
-        commentParser.parse(file);
+        commentParser.parseDir(file);
 
         System.out.println(JSON.toJSONString(commentParser.getMethodComments(), true));
         System.out.println("------------------------------");

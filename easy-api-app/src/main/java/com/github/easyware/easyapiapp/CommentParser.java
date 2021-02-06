@@ -18,6 +18,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeS
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,7 +31,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.github.javaparser.utils.PositionUtils.sortByBeginPosition;
-
+@Component
 public class CommentParser {
     private static Logger logger= LoggerFactory.getLogger(CommentParser.class);
     CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
@@ -68,40 +69,43 @@ public class CommentParser {
         javaParserFacade=JavaParserFacade.get(combinedTypeSolver);
 
     }
-    public void parse(File dir){
+    public void parseDir(File dir){
         count=1;
         new DirSearch(dir){
 
             @Override
             protected void handle(int level, File file) {
-                if(file.isFile() && file.getName().endsWith(".java")) {
-                    try {
 
-                        CompilationUnit c = javaParser.parse(file).getResult().get();
-                        List<ClassOrInterfaceDeclaration> classNodes = c.findAll(ClassOrInterfaceDeclaration.class);
-                        for(ClassOrInterfaceDeclaration classNode:classNodes){
-                            if(!classNode.isPublic()) continue;
-                            if(classNode.isInterface())continue;
-                            System.out.println(file.getAbsolutePath()+","+count++);
+                parseFile(file);
+            }
+        };
+    }
+    public void parseFile(File file){
+        if(file.isFile() && file.getName().endsWith(".java")) {
+            try {
 
-                            //controlller
-                            if(classNode.isAnnotationPresent(RestController.class)|| classNode.isAnnotationPresent(Controller.class)){
-                                parseMethod(classNode);
+                CompilationUnit c = javaParser.parse(file).getResult().get();
+                List<ClassOrInterfaceDeclaration> classNodes = c.findAll(ClassOrInterfaceDeclaration.class);
+                for(ClassOrInterfaceDeclaration classNode:classNodes){
+                    if(!classNode.isPublic()) continue;
+                    if(classNode.isInterface())continue;
+                    System.out.println(file.getAbsolutePath()+","+count++);
 
-                            }else{
+                    //controlller
+                    if(classNode.isAnnotationPresent(RestController.class)|| classNode.isAnnotationPresent(Controller.class)){
+                        parseMethod(classNode);
 
-                                parseField(classNode);
+                    }else{
 
-                            }
-                        }
+                        parseField(classNode);
 
-                    }catch (Exception e){
-                        logger.error("",e);
                     }
                 }
 
+            }catch (Exception e){
+                logger.error("",e);
             }
-        };
+        }
     }
 
     private void parseMethod(ClassOrInterfaceDeclaration classNode){
