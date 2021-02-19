@@ -4,19 +4,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MethodComment {
-    private String fullName;//类名#方法名
+    //private String fullName;//类名#方法名
     private String summary;//概要
     private String desc;//说明
     private Map<String,String> params =new HashMap<>();//参数说明
     private String returnComment;//返回说明
 
-    public String getFullName() {
+    /*public String getFullName() {
         return fullName;
     }
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
-    }
+    }*/
 
     public String getSummary() {
         return summary;

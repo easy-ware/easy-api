@@ -10,7 +10,6 @@ import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.javadoc.Javadoc;
 import com.github.javaparser.javadoc.JavadocBlockTag;
-import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
@@ -210,10 +209,11 @@ public class ParserTest {
         CommentParser commentParser = new CommentParser();
         File file=new File("/Users/apple/workspace/");
         //file=new File("/Users/apple/github/easy-api/easy-api-app/src/test/java/com/github/easyware/easyapiapp")
-        commentParser.parseDir(file);
+        String group="group1";
+        commentParser.parseDir(group,file);
 
-        System.out.println(JSON.toJSONString(commentParser.getMethodComments(), true));
+        System.out.println(JSON.toJSONString(commentParser.getMethodComments(group), true));
         System.out.println("------------------------------");
-        System.out.println(JSON.toJSONString(commentParser.getFieldComments(), true));
+        System.out.println(JSON.toJSONString(commentParser.getClassComments(group), true));
     }
 }

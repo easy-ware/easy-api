@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  *
  */
 @SpringBootTest
-class EasyApiAppApplicationTests {
+class EasyApiApplicationTests {
 
     @Test
     void contextLoads() {

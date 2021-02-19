@@ -9,14 +9,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  */
 @SpringBootApplication
 @EnableScheduling
-public class EasyApiAppApplication {
+public class EasyApiApplication {
 
     /**
      * 主要方法
      * @param args
      */
     public static void main(String[] args) {
-        SpringApplication.run(EasyApiAppApplication.class, args);
+        SpringApplication.run(EasyApiApplication.class, args);
     }
 
 }

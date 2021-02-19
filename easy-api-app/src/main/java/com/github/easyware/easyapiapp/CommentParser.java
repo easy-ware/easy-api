@@ -11,23 +11,20 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.javadoc.Javadoc;
 import com.github.javaparser.javadoc.JavadocBlockTag;
-import com.github.javaparser.printer.PrettyPrintVisitor;
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.github.javaparser.utils.PositionUtils.sortByBeginPosition;
@@ -36,18 +33,32 @@ public class CommentParser {
     private static Logger logger= LoggerFactory.getLogger(CommentParser.class);
     CombinedTypeSolver combinedTypeSolver = new CombinedTypeSolver();
     JavaParserFacade javaParserFacade=null;
-    private Map<String,MethodComment> methodComments=new ConcurrentHashMap<>();
-    private Map<String,Map<String,String>> fieldComments=new ConcurrentHashMap<>();//<className, <prop,comment>>
+    private Map<String,Map> groupMethods;
+    private Map<String,Map> groupClasses;
+    //private Map<String,MethodComment> methodComments=new ConcurrentHashMap<>();//<class.method,m>
+    //private Map<String,Map<String,String>> classComments =new ConcurrentHashMap<>();//<className, <prop,comment>>
     JavaParser javaParser=new JavaParser();
 
     private long count;
 
-    public Map<String, MethodComment> getMethodComments() {
-        return methodComments;
+    public Map<String, MethodComment> getMethodComments(String group) {
+        return groupMethods.get(group);
     }
 
-    public Map<String, Map<String, String>> getFieldComments() {
-        return fieldComments;
+    public Map<String, Map<String, String>> getClassComments(String group) {
+        return groupClasses.get(group);
+    }
+
+
+    public void initGroups(Collection<String> groups) throws Exception {
+        if(groupMethods!=null) return;
+        groupMethods=new HashMap<>();
+        groupClasses=new HashMap<>();
+        for (String group:groups){
+            groupMethods.put(group,new ConcurrentHashMap<>());
+            groupClasses.put(group,new ConcurrentHashMap<>());
+        }
+
     }
 
     public void searchSourceDir(File dir){
@@ -69,18 +80,18 @@ public class CommentParser {
         javaParserFacade=JavaParserFacade.get(combinedTypeSolver);
 
     }
-    public void parseDir(File dir){
+    public void parseDir(String group,File dir){
         count=1;
         new DirSearch(dir){
 
             @Override
             protected void handle(int level, File file) {
 
-                parseFile(file);
+                parseFile(group,file);
             }
         };
     }
-    public void parseFile(File file){
+    public void parseFile(String group,File file){
         if(file.isFile() && file.getName().endsWith(".java")) {
             try {
 
@@ -93,11 +104,11 @@ public class CommentParser {
 
                     //controlller
                     if(classNode.isAnnotationPresent(RestController.class)|| classNode.isAnnotationPresent(Controller.class)){
-                        parseMethod(classNode);
+                        parseMethod(group,classNode);
 
                     }else{
 
-                        parseField(classNode);
+                        parseField(group,classNode);
 
                     }
                 }
@@ -108,14 +119,14 @@ public class CommentParser {
         }
     }
 
-    private void parseMethod(ClassOrInterfaceDeclaration classNode){
+    private void parseMethod(String group,ClassOrInterfaceDeclaration classNode){
         List<MethodDeclaration> methodNodes = classNode.findAll(MethodDeclaration.class)  ;
         for(MethodDeclaration methodNode:methodNodes){
             MethodComment  methodComment=getMethodComment( methodNode);
             if(methodComment!=null){
-                String key=classNode.getFullyQualifiedName().get()+"#"+methodNode.getName();
-                methodComment.setFullName(key);
-                methodComments.put(key,methodComment);
+                String key=classNode.getFullyQualifiedName().get()+"."+methodNode.getName();
+                //methodComment.setFullName(key);
+                groupMethods.get(group).put(key,methodComment);
             }
         }
     }
@@ -149,7 +160,7 @@ public class CommentParser {
          return methodComment;
 
     }
-    private void parseField(ClassOrInterfaceDeclaration classNode){
+    private void parseField(String group,ClassOrInterfaceDeclaration classNode){
         List<FieldDeclaration> fieldNodes = classNode.findAll(FieldDeclaration.class)  ;
         Map<String,String> map=new HashMap<>();
         for (FieldDeclaration node : fieldNodes) {
@@ -163,7 +174,7 @@ public class CommentParser {
         }
         if(map.size()>0){
 
-            fieldComments.put(classNode.getFullyQualifiedName().get(),map);
+            groupClasses.get(group).put(classNode.getFullyQualifiedName().get(),map);
         }
     }
 
@@ -218,4 +229,6 @@ public class CommentParser {
         return new String[] {desc,desc};
 
     }
+
+
 }
