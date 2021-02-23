@@ -8,7 +8,7 @@ public class MethodComment {
     private String summary;//概要
     private String desc;//说明
     private Map<String,String> params =new HashMap<>();//参数说明
-    private String returnComment;//返回说明
+    private String response;//返回说明
 
     /*public String getFullName() {
         return fullName;
@@ -42,11 +42,11 @@ public class MethodComment {
         this.params = params;
     }
 
-    public String getReturnComment() {
-        return returnComment;
+    public String getResponse() {
+        return response;
     }
 
-    public void setReturnComment(String returnComment) {
-        this.returnComment = returnComment;
+    public void setResponse(String response) {
+        this.response = response;
     }
 }

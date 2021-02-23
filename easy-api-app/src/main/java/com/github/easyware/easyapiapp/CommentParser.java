@@ -17,7 +17,6 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeS
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
@@ -108,6 +107,7 @@ public class CommentParser {
 
                     }else{
 
+
                         parseField(group,classNode);
 
                     }
@@ -151,7 +151,7 @@ public class CommentParser {
                  if("param".equals(tag.getTagName())){
                     if(name!=null) methodComment.getParams().put(name,tag.getContent().toText());
                  }else if("return".equals(tag.getTagName())){
-                     methodComment.setReturnComment(tag.getContent().toText());
+                     methodComment.setResponse(tag.getContent().toText());
                  }
 
              }
@@ -161,8 +161,12 @@ public class CommentParser {
 
     }
     private void parseField(String group,ClassOrInterfaceDeclaration classNode){
-        List<FieldDeclaration> fieldNodes = classNode.findAll(FieldDeclaration.class)  ;
         Map<String,String> map=new HashMap<>();
+        if( classNode.getComment().isPresent()){
+            map.put("class",classNode.getComment().get().getContent());// class comment
+        }
+        List<FieldDeclaration> fieldNodes = classNode.findAll(FieldDeclaration.class)  ;
+
         for (FieldDeclaration node : fieldNodes) {
             VariableDeclarator var=node.getVariable(0);
             String name=var.getName().getId();

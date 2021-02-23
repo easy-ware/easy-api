@@ -282,7 +282,7 @@ public class EasyAPIController implements BeanFactoryAware {
 
     }
 
-    private static class TypeVisitCallbackImpl implements TypeVisitCallback<Schema> {
+    public  class TypeVisitCallbackImpl implements TypeVisitCallback<Schema> {
         Components components;
         Schema root;
 
@@ -305,7 +305,7 @@ public class EasyAPIController implements BeanFactoryAware {
                 else parent.addProperties(prop, schema);
             }
             if (baseDataType != null) {
-                System.out.println("ba="+baseDataType);
+                //System.out.println("ba="+baseDataType);
                 String[] dataType = dataTypeMap.get(baseDataType);
                 schema.type(dataType[0]);
                 schema.format(dataType[1]);
@@ -376,7 +376,7 @@ public class EasyAPIController implements BeanFactoryAware {
     private String[] getDataType(Type type) {
         if (type instanceof Class) {
             Class c = (Class) type;
-            String s = TypeVisit.getBase(c);
+            String s = Global.getBase(c);
             if (s != null) {
                 return dataTypeMap.get(s);
             }

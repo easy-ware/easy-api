@@ -54,6 +54,10 @@ public class SvnTest {
     //update_delete  update_add update_update
         /*svnClientManager.getUpdateClient().doUpdate(  new File("/data/svn"),
                 SVNRevision.HEAD, SVNDepth.INFINITY, true,true   );*/
+        File savePath=new File("/data/svn","group1");
+        savePath=new File(savePath,"source1");
+        savePath.mkdirs();
+        //man.getAdminClient().doRemoveLocks(new File(savePath,".svn"), new String[]{""});
         svnClientManager.getUpdateClient().doCheckout( SVNURL.parseURIEncoded(svnRoot ),
                 new File("/data/svn"), SVNRevision.HEAD,SVNRevision.HEAD, SVNDepth.INFINITY,true);
         System.out.println("end");

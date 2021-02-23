@@ -29,7 +29,7 @@ public class TypeVisit<T> {
             if (clazz.isArray()) {
                 visit(parent, clazz.getComponentType(), true, prop);
             } else {
-                String base = getBase(clazz);
+                String base = Global.getBase(clazz);
                 if (base != null) {
                     //System.out.println(prefix + prop + ":" + base);
                     typeVisitCallback.callback(parent, prop, clazz, array, base);
@@ -146,20 +146,6 @@ public class TypeVisit<T> {
     }
 
 
-    public static String getBase(Class clazz) {
 
-        //Class className = object.getClass();
-        if (clazz.equals(Integer.class) || clazz.equals(int.class)) return "int";
-        if (clazz.equals(Long.class) || clazz.equals(long.class)) return "long";
-        if (clazz.equals(Double.class) || clazz.equals(double.class)) return "double";
-        if (clazz.equals(Float.class) || clazz.equals(float.class)) return "float";
-        if (clazz.equals(Short.class) || clazz.equals(short.class)) return "short";
-        if (clazz.equals(Byte.class) || clazz.equals(byte.class)) return "byte";
-        if (clazz.equals(Boolean.class) || clazz.equals(boolean.class)) return "boolean";
-        if (clazz.equals(Character.class) || clazz.equals(char.class)) return "char";
-        if (clazz.equals(String.class)) return "string";
-        if (clazz.equals(Object.class)) return "object";
-        return null;
-    }
 
 }

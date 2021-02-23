@@ -17,6 +17,7 @@ import org.tmatesoft.svn.core.internal.io.fs.FSRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
 import org.tmatesoft.svn.core.wc.*;
+import org.tmatesoft.svn.core.wc2.SvnCleanup;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -125,7 +126,10 @@ public class SvnClient implements InitializingBean {
 
             }
         });
-
+       /* if(savePath.exists()) {
+           //   man.getAdminClient().doListLocks(savePath);
+            man.getAdminClient().doRemoveLocks(new File(savePath,".svn"), new String[]{""});
+        }*/
         /*svnClientManager.getUpdateClient().doUpdate(  new File("/data/svn"),
                 SVNRevision.HEAD, SVNDepth.INFINITY, true,true   );*/
         man.getUpdateClient().doCheckout( svnURL,

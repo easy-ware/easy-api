@@ -2,6 +2,7 @@ package com.github.easyware.easyapiapp;
 
 import com.github.easyware.easyapiapp.object.MethodComment;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,9 +26,9 @@ public class Controller {
         return commentParser.getMethodComments(g).keySet();
     }
 
-    @RequestMapping("/methods")
-    public Map<String, MethodComment>  methods(String g){
-        return commentParser.getMethodComments(g);
+    @RequestMapping("/{group}/methods")
+    public Map<String, MethodComment>  methods(@PathVariable String group){
+        return commentParser.getMethodComments(group);
     }
 
 
@@ -41,8 +42,8 @@ public class Controller {
         return commentParser.getClassComments(g).keySet();
     }
 
-    @RequestMapping("/classes")
-    public Map<String, Map<String, String>> classes(String g){
-        return commentParser.getClassComments(g);
+    @RequestMapping("/{group}/classes")
+    public Map<String, Map<String, String>> classes(@PathVariable String group){
+        return commentParser.getClassComments(group);
     }
 }

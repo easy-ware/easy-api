@@ -27,12 +27,13 @@ public class EasyApiTask implements InitializingBean {
     public void afterPropertiesSet() throws Exception {
         commentParser.initGroups(svnClient.getGroupMap().keySet());
     }
-    @Scheduled(fixedDelay = 1000*60)
+    @Scheduled(fixedDelay = 1000*180)
     public void svnUpdate() throws Exception{
         logger.info("update svn files");
 
         svnClient.getGroupMap().forEach((group,svnSources)->{
             for(SvnSource svnSource:svnSources) {
+
                 try {
                     List<File> files = svnClient.update(group, svnSource);
                     for(File file :files){
@@ -40,7 +41,7 @@ public class EasyApiTask implements InitializingBean {
                     }
 
                 } catch (SVNException e) {
-                    throw  new RuntimeException(e);
+                    logger.error("svn update error",e);
                 }
             }
             logger.info("method size="+commentParser.getMethodComments(group).size());
@@ -51,7 +52,7 @@ public class EasyApiTask implements InitializingBean {
         // task execution logic
     }
 
-    @Scheduled(fixedDelay = 1000*100)
+    @Scheduled(fixedDelay = 1000*1800)
     public void fullUpdate() throws Exception{
         logger.info("full update");
 

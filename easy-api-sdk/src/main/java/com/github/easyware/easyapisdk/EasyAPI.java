@@ -2,6 +2,9 @@ package com.github.easyware.easyapisdk;
 
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.alibaba.fastjson.serializer.SimplePropertyPreFilter;
 import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.*;
@@ -11,11 +14,6 @@ import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.oas.models.servers.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.BeanFactoryAware;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpMethod;
@@ -36,6 +34,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletResponse;
 import java.beans.IntrospectionException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.*;
 
@@ -43,6 +42,9 @@ import java.util.*;
 public class EasyAPI  {
     private static Logger logger = LoggerFactory.getLogger(EasyAPI.class);
     private static String CONTENT_TYPE_JSON = "application/json";
+    private static byte BODY_NO=0;
+    private static byte BODY_YES=1;
+    private static byte BODY_FORM=2;
     private static Class errorControllerClass;
     static {
         try{
@@ -53,70 +55,92 @@ public class EasyAPI  {
     }
     //@Autowired
     //ParameterNameDiscoverer parameterNameDiscoverer;
-    private static Class[] ignoreParamTypes = new Class[]{javax.servlet.ServletRequest.class,
-            javax.servlet.ServletResponse.class,
-            javax.servlet.http.HttpServletRequest.class,
-            HttpServletResponse.class,
-            javax.servlet.http.HttpSession.class,
-            javax.servlet.http.HttpSession.class,
-            WebRequest.class,
-            NativeWebRequest.class,
-            java.security.Principal.class,
-
-            HttpMethod.class,
-            Locale.class,
-            TimeZone.class,
-            java.io.InputStream.class,
-            java.time.ZoneId.class,
-            java.io.Reader.class,
-            java.io.OutputStream.class,
-            java.io.Writer.class,
-            Map.class,
-            org.springframework.ui.Model.class,
-            org.springframework.ui.ModelMap.class,
-            Errors.class,
-            BindingResult.class,
-            SessionStatus.class,
-            UriComponentsBuilder.class,
-            RequestAttribute.class};
-    private static Set<Class> ignoreParamTypeSet = new HashSet<>(Arrays.asList(ignoreParamTypes));
-
-    private static Map<String, String[]> dataTypeMap = new HashMap() {{
-        put("byte", new String[]{"integer", "int32"});
-        put("short", new String[]{"integer", "int32"});
-        put("int", new String[]{"integer", "int32"});
-        put("long", new String[]{"integer", "int64"});
-        put("float", new String[]{"number", "float"});
-        put("double", new String[]{"number", "double"});
-        put("string", new String[]{"string", null});
-        put("char", new String[]{"string", null});
-        put("boolean", new String[]{"boolean", null});
-        put("object", new String[]{"object", null});//未知的对象
-
-    }};
 
     private static DefaultParameterNameDiscoverer discoverer = new DefaultParameterNameDiscoverer();
+
+    private JSONObject groupMethods;
+    private JSONObject groupClasses;
+    RequestMappingHandlerMapping handlerMapping;
+    String projectTitle;
+    String projectUrl;
+    String easyAPIServerUrl;
+    public EasyAPI(RequestMappingHandlerMapping handlerMapping,String projectTitle,String projectUrl, String easyAPIServerUrl){
+        this.projectTitle=projectTitle;
+        this.projectUrl=projectUrl;
+        this.easyAPIServerUrl=easyAPIServerUrl;
+        this.handlerMapping=handlerMapping;
+    }
 
     //@Autowired
     //private RequestMappingHandlerMapping handlerMapping;
 
+
     //@RequestMapping(value = "/mappings")
-    public String handlerMappings(RequestMappingHandlerMapping handlerMapping) throws Exception {
+    // 第一级 or  ， 第二级 and
+    private boolean match(String[] search,String text){
+        if(search==null || search.length==0) return false;
+        for(String searchItem:search) {
+            String[] items=searchItem.trim().split("[;+；\\s]+");
+            boolean allMatch=true;
+                for (String item : items) {
+                    if (text.toLowerCase().indexOf(item.trim().toLowerCase()) ==-1){
+                        allMatch=false;
+                        break;
+                    }
+                }
+                if(allMatch) return true;
+        }
+       return false;
+    }
+
+    private String getKey(String[] search,String key){
+        String cacheKey="EasyAPI::getDoc:url:"+key+":";
+        if(search!=null){
+           for(String s:search) cacheKey+=s;
+        }
+        return cacheKey;
+    }
+    private String[] trim(String[] items){
+        if(items==null) return null;
+       List<String> result=new ArrayList<>();
+       for(String item:items){
+           if(item!=null && item.trim().length()>0){
+               result.add(item);
+           }
+       }
+       return result.toArray(new String[0]);
+    }
+
+    public String getDoc(String[] search,String urlMatch) throws Exception {
+        search=trim(search);
+        String cacheKey=getKey(search,urlMatch);
+        String data=Global.getCache(cacheKey);
+        if(data!=null) return data;
+
+        long t=System.currentTimeMillis();
+
+        groupMethods=Global.httpGetObject(easyAPIServerUrl+"/methods",180L);
+        groupClasses=Global.httpGetObject(easyAPIServerUrl+"/classes",180L);
+
         OpenAPI openAPI = new OpenAPI();
         Info info = new Info();
-        info.version("1.0.0").title("wap-m");
+        info.version("1.0.0").title(projectTitle);//"wap-m");
         Server server = new Server();
-        server.url("http://wapmanageapi.test.tiebaobei.com/wapmanageApi");
+        server.url(projectUrl);//"http://wapmanageapi.test.tiebaobei.com/wapmanageApi");
         Paths paths = new Paths();
-        Components components = new Components();
+        Components allComponents = new Components();
 
-        openAPI.info(info).servers(Arrays.asList(server)).paths(paths).components(components);
+        openAPI.info(info).servers(Arrays.asList(server)).paths(paths).components(allComponents);
 
         List<HashMap<String, String>> urlList = new ArrayList<HashMap<String, String>>();
 
         Map<RequestMappingInfo, HandlerMethod> map = handlerMapping.getHandlerMethods();
         logger.info("map count=" + map.size());
         int i = 0;
+        //String[][] searchItems=null;
+       /* if(search!=null && search.length>0){
+            searchItems= search.toLowerCase().split(",");
+        }*/
         for (Map.Entry<RequestMappingInfo, HandlerMethod> m : map.entrySet()) {
 
             HashMap<String, String> hashMap = new HashMap<String, String>();
@@ -125,80 +149,119 @@ public class EasyAPI  {
             HandlerMethod handlerMethod = m.getValue();
             if(errorControllerClass!=null && errorControllerClass.isAssignableFrom(handlerMethod.getBeanType()) )continue;
 
+
+
             //-- url
             PatternsRequestCondition p = requestMapping.getPatternsCondition();
             if (CollectionUtils.isEmpty(p.getPatterns())) continue;
             String url = p.getPatterns().iterator().next();// only get first url
             System.out.println("-----"+url);
+            if(StringUtils.hasText(urlMatch)){
+                if(url.toLowerCase().indexOf(urlMatch.toLowerCase())==-1){
+                    continue;
+                }
+            }
             //if(!p.getPatterns().iterator().next().startsWith("/aa")) continue;
             //if(i++>30) break;
 
+            Components components = new Components();
+
             //-- PathItem
             PathItem item = new PathItem();
-            paths.addPathItem(url, item);
-
 
             //--Operation（描述对路径的某个操作。）
             Operation operation = new Operation();
-            //仅取第一个http method
-            PathItem.HttpMethod httpMethod = getHttpMethod(requestMapping, handlerMethod);
-            item.operation(httpMethod, operation);
 
-            operation.setSummary("summary");//todo
-            operation.setDescription("desc");//todo
-            operation.setOperationId(handlerMethod.getMethod().getName());
+
+            Method javaMethod=handlerMethod.getMethod();
+            //String serverUrl=easyAPIServerUrl+"/method?g=group1&m="+;
+            JSONObject comment= groupMethods.getJSONObject(javaMethod.getDeclaringClass().getName()+"."+javaMethod.getName());
+            if(comment!=null) {
+                operation.setSummary(comment.getString("summary"));//"summary");//todo
+                operation.setDescription(comment.getString("desc"));//todo
+            }
+            operation.setOperationId(javaMethod.getName());
+
 
             //parameters（对应 java 方法的参数）
             System.out.println("-----parameters");
-            doParameters(operation, components, requestMapping, handlerMethod);
+            boolean hasbody= doParameters(operation, components, requestMapping, handlerMethod,comment==null?null:comment.getJSONObject("params"));
+
             // return type
             System.out.println("-----returnType");
-            doReturnType(operation, components, requestMapping, handlerMethod);
+            doReturnType(operation, components, requestMapping, handlerMethod,comment==null?null:comment.getString("response"));
 
+            //仅取第一个http method
+            PathItem.HttpMethod httpMethod = getHttpMethod(requestMapping, handlerMethod);
+            if(httpMethod==null) httpMethod=hasbody?PathItem.HttpMethod.POST:PathItem.HttpMethod.GET;
+            item.operation(httpMethod, operation);
 
-            //RequestBody b=method.getMethodParameters()[0].getParameterAnnotation(RequestBody.class);
-            //RequestParam rp=method.getMethodParameters()[1].getParameterAnnotation(RequestParam.class);
-            //RequestParam rp2= org.springframework.core.annotation.AnnotationUtils.findAnnotation(method.getMethod(),RequestParam.class);
+            if(search==null || search.length==0 || match(search,url+JSON.toJSONString(item)+JSON.toJSONString(components))){
+                paths.addPathItem(url, item);
+                if(components.getSchemas()!=null){
+                    components.getSchemas().forEach((k,v)-> allComponents.addSchemas(k,v));
+                }
 
-
-
-            /*hashMap.put("className", method.getMethod().getDeclaringClass().getName()); // 类名
-            hashMap.put("method", method.getMethod().getName()); // 方法名
-            RequestMethodsRequestCondition methodsCondition = mappingInfo.getMethodsCondition();
-            String type = methodsCondition.toString();
-            if (type != null && type.startsWith("[") && type.endsWith("]")) {
-                type = type.substring(1, type.length() - 1);
-                hashMap.put("type", type); // 方法名
             }
-            urlList.add(hashMap);*/
+
+
+
+
+
+
         }
-        return JSON.toJSONString(openAPI, true);// openAPI.toString();
+
+        SimplePropertyPreFilter filter = new SimplePropertyPreFilter();
+        filter.getExcludes().add("exampleSetFlag");
+        logger.info("cost {}ms",(System.currentTimeMillis()-t));
+        data= JSON.toJSONString(openAPI, filter, SerializerFeature.PrettyFormat);// openAPI.toString();
+        Global.addCache(cacheKey,data,60);
+        return data;
 
     }
 
-    private void doParameters(Operation operation, Components components, RequestMappingInfo requestMapping, HandlerMethod handlerMethod) throws IntrospectionException {
+    /**
+     *
+     * @param operation
+     * @param components
+     * @param requestMapping
+     * @param handlerMethod
+     * @param descMap
+     * @return  是否包含body
+     * @throws IntrospectionException
+     */
+    private boolean doParameters(Operation operation, Components components, RequestMappingInfo requestMapping, HandlerMethod handlerMethod, JSONObject descMap) throws IntrospectionException {
         MethodParameter[] methodParameters = handlerMethod.getMethodParameters();
-        if (methodParameters == null || methodParameters.length == 0) return;
+        boolean hasBody=false;
+        if (methodParameters == null || methodParameters.length == 0) return hasBody;
 
 
         List<Parameter> parameters = new ArrayList<>();
         operation.parameters(parameters);
-
+        //-- 是否有@RequestBody
         for (MethodParameter mp : methodParameters) {
-            if (ignoreParamTypeSet.contains(mp.getParameterType())) continue;
+            if (Global.ignoreParamTypeSet.contains(mp.getParameterType())) continue;
+            if (mp.hasParameterAnnotation(RequestBody.class)) {
+                hasBody=true;
+            }
+        }
+        for (MethodParameter mp : methodParameters) {
+            if (Global.ignoreParamTypeSet.contains(mp.getParameterType())) continue;
 
+            //--初始化参数名称读取器
             mp.initParameterNameDiscovery(discoverer);
             Parameter parameter = new Parameter();
 
-            MediaType requestBodyObject = null;
             String parameterName = mp.getParameterName();
 
-            if (mp.getParameterName() == null) {
-                System.out.println("is null");
+            String paramDesc=null;
+            if(descMap!=null) {
+                paramDesc=descMap.getString(parameterName);
             }
-            parameter.description("desc");//todo
-            boolean required = false;
 
+            String bodyContentType=null;
+            boolean required = false;
+            //-- 解析参数注解
             if (mp.hasParameterAnnotation(RequestHeader.class)) {
                 parameter.in("header");
                 RequestHeader annotation = mp.getParameterAnnotation(RequestHeader.class);
@@ -221,55 +284,72 @@ public class EasyAPI  {
                 //operation/requestBody/content/"application/json"/schema
                 RequestBody annotation = mp.getParameterAnnotation(RequestBody.class);
                 required = annotation != null && annotation.required();
-                String contentType = getRequestContentType(requestMapping, CONTENT_TYPE_JSON);
-                io.swagger.v3.oas.models.parameters.RequestBody requestBody = new io.swagger.v3.oas.models.parameters.RequestBody();
-                operation.requestBody(requestBody);
-                requestBody.description("requestBody desc");
-                Content content = new Content();
-                requestBody.content(content);
-                requestBodyObject = new MediaType();
-                content.addMediaType(contentType, requestBodyObject);
-
-                //parameter.in("path");
-
+                bodyContentType = getRequestContentType(requestMapping, CONTENT_TYPE_JSON);
 
             } else {
                 RequestParam annotation = mp.getParameterAnnotation(RequestParam.class);
-                if (annotation != null && !StringUtils.isEmpty(annotation.value()))
+                if (annotation != null && !StringUtils.isEmpty(annotation.value())) {
                     parameterName = annotation.value();
+                }
                 required = annotation != null && annotation.required() && annotation.defaultValue().equals(ValueConstants.DEFAULT_NONE);
-                parameter.in("query");
+                //参数如果是对象类型，则设置为openapi中的RequestBody对象或者 parameter.in("body")，这样才会显示schema（包含说明），如果设为query则只显示example，不显示schema
+                //优先设置第一个对象为RequestBody,便于正确执行try it out；其它对象设置为parameter.in("body")，能显示schema，但不能正确执行try it out！！！
+                if(Global.getBase(mp.getParameterType())==null){
+
+                    if(!hasBody) {
+                        bodyContentType = "application/x-www-form-urlencoded";
+                        hasBody=true;
+                    }else{
+                        parameter.in("body");
+                    }
+                }else{
+                    parameter.in("query");
+                }
+
             }
 
+
             Type type = mp.getGenericParameterType();
-            TypeVisitCallbackImpl typeVisitCallback = new TypeVisitCallbackImpl(components);
+            DefaultTypeVisitCallback typeVisitCallback = new DefaultTypeVisitCallback(components,groupClasses);
             new TypeVisit(typeVisitCallback).visit(type);
             Schema root = typeVisitCallback.root;
-            if (requestBodyObject != null) {
+            if (bodyContentType != null) {
+                MediaType  requestBodyObject = new MediaType();
                 requestBodyObject.schema(root);
+
+                Content content = new Content();
+                content.addMediaType(bodyContentType, requestBodyObject);
+
+                io.swagger.v3.oas.models.parameters.RequestBody requestBody = new io.swagger.v3.oas.models.parameters.RequestBody();
+                requestBody.description(paramDesc);
+                requestBody.content(content);
+                operation.requestBody(requestBody);
+
             } else {
+                parameter.description(paramDesc);
                 parameter.schema(root);
                 parameter.name(parameterName);// mp.getParameterName());
                 parameter.required(required);
                 parameters.add(parameter);
-
             }
 
         }
+        return hasBody;
 
     }
 
-    private void doReturnType(Operation operation, Components components, RequestMappingInfo requestMapping, HandlerMethod handlerMethod) throws IntrospectionException {
+    private void doReturnType(Operation operation, Components components, RequestMappingInfo requestMapping, HandlerMethod handlerMethod,String desc) throws IntrospectionException {
 
         MethodParameter mp = handlerMethod.getReturnType();
         Type type = mp.getGenericParameterType();
-        TypeVisitCallbackImpl typeVisitCallback = new TypeVisitCallbackImpl(components);
+        DefaultTypeVisitCallback typeVisitCallback = new DefaultTypeVisitCallback(components,groupClasses);
         new TypeVisit(typeVisitCallback).visit(type);
         Schema root = typeVisitCallback.root;
 
         ApiResponses apiResponses = new ApiResponses();
         operation.responses(apiResponses);
         ApiResponse apiResponse = new ApiResponse();
+        apiResponse.description(desc);
         apiResponses.addApiResponse("200", apiResponse);
 
         String contentType = getResponseContentType(requestMapping, CONTENT_TYPE_JSON);
@@ -281,46 +361,7 @@ public class EasyAPI  {
 
     }
 
-    private static class TypeVisitCallbackImpl implements TypeVisitCallback<Schema> {
-        Components components;
-        Schema root;
 
-        public TypeVisitCallbackImpl(Components components) {
-            this.components = components;
-        }
-
-        @Override
-        public Schema callback(Schema parent, String prop, Class clazz, boolean array, String baseDataType) {
-
-            //-- 参数的schema
-            Schema schema = new Schema();
-            if (array) {
-                ArraySchema arraySchema = new ArraySchema();
-                arraySchema.items(schema);
-                if (parent == null) root = arraySchema;
-                else parent.addProperties(prop, arraySchema);
-            } else {
-                if (parent == null) root = schema;
-                else parent.addProperties(prop, schema);
-            }
-            if (baseDataType != null) {
-                System.out.println("ba="+baseDataType);
-                String[] dataType = dataTypeMap.get(baseDataType);
-                schema.type(dataType[0]);
-                schema.format(dataType[1]);
-                return schema;
-
-            } else {
-                schema.$ref("#/components/schemas/" + clazz.getName());//"$ref": "#/components/schemas/Pets"
-                //-- 组件里面的schema
-                ObjectSchema objectSchema = new ObjectSchema();
-                components.addSchemas(clazz.getName(), objectSchema);
-                return objectSchema;
-            }
-
-
-        }
-    }
 
 
     private String getRequestContentType(RequestMappingInfo requestMapping, String def) {
@@ -343,17 +384,20 @@ public class EasyAPI  {
         return def;
     }
 
+    /**
+     *
+     * @param requestMapping
+     * @param method
+     * @return
+     */
     private PathItem.HttpMethod getHttpMethod(RequestMappingInfo requestMapping, HandlerMethod method) {
         Set<RequestMethod> requestMethods = requestMapping.getMethodsCondition().getMethods();
-        PathItem.HttpMethod httpMethod;
+        PathItem.HttpMethod httpMethod=null;
         if (!CollectionUtils.isEmpty(requestMethods)) {
             httpMethod = convert(requestMethods.iterator().next());
 
         } else if (hasParameterAnnotation(method, RequestBody.class) || hasParameterAnnotation(method, RequestPart.class)) {
             httpMethod = PathItem.HttpMethod.POST;
-
-        } else {
-            httpMethod = PathItem.HttpMethod.GET;
 
         }
         return httpMethod;
@@ -375,14 +419,16 @@ public class EasyAPI  {
     private String[] getDataType(Type type) {
         if (type instanceof Class) {
             Class c = (Class) type;
-            String s = TypeVisit.getBase(c);
+            String s = Global.getBase(c);
             if (s != null) {
-                return dataTypeMap.get(s);
+                return Global.dataTypeMap.get(s);
             }
         }
         return null;
 
     }
+
+
 
 
 }
