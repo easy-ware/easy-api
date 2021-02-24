@@ -6,11 +6,22 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.PullResult;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.HttpConfig;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import java.io.IOException;
+import java.util.List;
 
+import org.dstadler.jgit.helper.CookbookHelper;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 public class GitUtil {
 	//private static Log log = LogFactory.getLog(GitUtil.class);
 
@@ -62,8 +73,47 @@ public class GitUtil {
 		Git git = getGit(uri, credentialsProvider, localDir);
 		PullResult pullResult=	pull(git, credentialsProvider);
 		System.out.println(pullResult);
+		diff(git);
 		//push(git, credentialsProvider, ".", "提交文件");
 
 	}
+
+	public static void diff(	Git git ) throws IOException, GitAPIException {
+
+			// The {tree} will return the underlying tree-id instead of the commit-id itself!
+			// For a description of what the carets do see e.g. http://www.paulboxley.com/blog/2011/06/git-caret-and-tilde
+			// This means we are selecting the parent of the parent of the parent of the parent of current HEAD and
+			// take the tree-ish of it
+
+			ObjectId oldHead =git.getRepository().resolve("HEAD^^^^{tree}");
+			ObjectId head = git.getRepository().resolve("HEAD^{tree}");
+
+			System.out.println("Printing diff between tree: " + oldHead + " and " + head);
+
+			// prepare the two iterators to compute the diff between
+			try (ObjectReader reader = git.getRepository().newObjectReader()) {
+				CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
+				oldTreeIter.reset(reader, oldHead);
+				CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
+				newTreeIter.reset(reader, head);
+
+				// finally get the list of changed files
+				try  {
+					List<DiffEntry> diffs= git.diff()
+							.setNewTree(newTreeIter)
+							.setOldTree(oldTreeIter)
+							.call();
+					for (DiffEntry entry : diffs) {
+						System.out.println("old: " + entry.getOldPath() +
+								", new: " + entry.getNewPath() +
+								", entry: " + entry);
+					}
+				}
+			}
+
+
+		System.out.println("Done");
+	}
+}
 
 }
