@@ -14,9 +14,6 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import java.io.IOException;
 import java.util.List;
 
-import org.dstadler.jgit.helper.CookbookHelper;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -98,7 +95,7 @@ public class GitUtil {
 				newTreeIter.reset(reader, head);
 
 				// finally get the list of changed files
-				try  {
+
 					List<DiffEntry> diffs= git.diff()
 							.setNewTree(newTreeIter)
 							.setOldTree(oldTreeIter)
@@ -108,7 +105,7 @@ public class GitUtil {
 								", new: " + entry.getNewPath() +
 								", entry: " + entry);
 					}
-				}
+
 			}
 
 
@@ -116,4 +113,3 @@ public class GitUtil {
 	}
 }
 
-}
