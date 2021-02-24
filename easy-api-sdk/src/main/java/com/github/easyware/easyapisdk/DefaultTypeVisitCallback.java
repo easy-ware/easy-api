@@ -19,17 +19,18 @@ public  class DefaultTypeVisitCallback implements TypeVisitCallback<DefaultTypeV
 
         private JSONObject getComments(Class clazz){
             JSONObject comments=new JSONObject();
+            if(clazz.equals(Object.class)) return comments;
             Class c=clazz;
             List<Class> list=new ArrayList<>();
             list.add(c);
             for(int i=0;i<3;i++){
                 c=c.getSuperclass();
-                if(c.getName().startsWith("java.")){break;}
+                if(c==null || c.getName().startsWith("java.")){break;}
                 list.add(c);
 
             }
            for(int i=list.size()-1;i>=0;i--){
-               JSONObject j= groupClasses.getJSONObject(clazz.getName());
+               JSONObject j= groupClasses.getJSONObject(list.get(i).getName());
                if(j!=null){
                    comments.putAll(j);
                }

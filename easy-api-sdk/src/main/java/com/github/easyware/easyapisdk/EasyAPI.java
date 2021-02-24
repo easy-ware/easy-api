@@ -141,6 +141,7 @@ public class EasyAPI  {
        /* if(search!=null && search.length>0){
             searchItems= search.toLowerCase().split(",");
         }*/
+        Set<String> tags=new HashSet<>();
         for (Map.Entry<RequestMappingInfo, HandlerMethod> m : map.entrySet()) {
 
             HashMap<String, String> hashMap = new HashMap<String, String>();
@@ -148,7 +149,6 @@ public class EasyAPI  {
             RequestMappingInfo requestMapping = m.getKey();
             HandlerMethod handlerMethod = m.getValue();
             if(errorControllerClass!=null && errorControllerClass.isAssignableFrom(handlerMethod.getBeanType()) )continue;
-
 
 
             //-- url
@@ -182,6 +182,12 @@ public class EasyAPI  {
             }
             operation.setOperationId(javaMethod.getName());
 
+           String tag= handlerMethod.getBeanType().getSimpleName();
+           /*if(tags.contains(tag)){
+               tag=handlerMethod.getBeanType().getName();
+           }*/
+            tags.add(tag);
+            operation.addTagsItem(tag);
 
             //parameters（对应 java 方法的参数）
             System.out.println("-----parameters");
@@ -203,11 +209,6 @@ public class EasyAPI  {
                 }
 
             }
-
-
-
-
-
 
         }
 
