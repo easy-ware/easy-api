@@ -4,11 +4,10 @@ import com.github.easyware.easyapiapp.object.MethodComment;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.FieldDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.comments.Comment;
+import com.github.javaparser.ast.comments.JavadocComment;
+import com.github.javaparser.ast.nodeTypes.NodeWithJavadoc;
 import com.github.javaparser.javadoc.Javadoc;
 import com.github.javaparser.javadoc.JavadocBlockTag;
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
@@ -127,14 +126,24 @@ public class CommentParser {
                 String key=classNode.getFullyQualifiedName().get()+"."+methodNode.getName();
                 //methodComment.setFullName(key);
                 groupMethods.get(group).put(key,methodComment);
+                logger.info("method add "+key+" "+methodComment);
             }
         }
     }
 
+
     private MethodComment getMethodComment(MethodDeclaration methodNode){
         if(!methodNode.isPublic()) return null;
-        if(!methodNode.getJavadoc().isPresent())return null;
-        Javadoc javadoc=methodNode.getJavadoc().get();
+        Javadoc javadoc=getJavaDoc(methodNode);
+        if(javadoc==null) return null;
+       /* if(!methodNode.getJavadoc().isPresent()){
+
+           if( methodNode.getComment().isPresent()){
+               System.out.println( methodNode.getComment().get().getContent());
+           }
+            return null;
+        }
+        Javadoc javadoc=methodNode.getJavadoc().get();*/
         MethodComment methodComment=new MethodComment();
 
         String desc=javadoc.getDescription().toText();
@@ -190,7 +199,7 @@ public class CommentParser {
     private String parseFieldComment(FieldDeclaration node ){
     //if(node.getVariable(0).getName().getId().equals("sex"))
       //  System.out.println(node.toString());
-       Node p =node.getParentNode().get();
+       /*Node p =node.getParentNode().get();
         List<Node> childs = new ArrayList<>(p.getChildNodes());
         sortByBeginPosition(childs);
        int n1=-1;
@@ -206,16 +215,74 @@ public class CommentParser {
                 n1=i+1;
                 break;
             }
-        }
+        }*/
         StringBuilder sb=new StringBuilder();
         if(node.getComment().isPresent()) {
             sb.append(node.getComment().get().getContent());// LineComment
         }
-        for(int i=n1;i<=n2;i++){
-            sb.append(((Comment)childs.get(i)).getContent());
+        List<Comment> nodes= getPreComment(node);
+        for(int i=0;i<nodes.size();i++){
+            sb.append(nodes.get(i).getContent());
         }
         return sb.toString();
 
+    }
+
+
+    private Javadoc getJavaDoc(MethodDeclaration node){
+        if(node.getJavadoc().isPresent()){
+            return node.getJavadoc().get();
+        }
+        Node p =node.getParentNode().get();
+        List<Node> childs = new ArrayList<>(p.getChildNodes());
+        sortByBeginPosition(childs);
+        int n1=-1;
+        int n2=-1;
+        for(int i=0;i<childs.size();i++){
+            if(childs.get(i)==node){
+                n2=i-1;
+                break;
+            }
+        }
+        for(int i=n2;i>=0;i--){
+            Node child=childs.get(i);
+            if(child instanceof AnnotationDeclaration) continue;
+            if(child instanceof JavadocComment){
+                return ((JavadocComment)child).parse();
+            }
+            if(!(child instanceof Comment)){
+                break;
+            }
+        }
+
+        return null;
+    }
+    private List<Comment> getPreComment(Node node){
+        Node p =node.getParentNode().get();
+        List<Node> childs = new ArrayList<>(p.getChildNodes());
+        sortByBeginPosition(childs);
+        //int n1=-1;
+        int n2=-1;
+        for(int i=0;i<childs.size();i++){
+            if(childs.get(i)==node){
+                n2=i-1;
+                break;
+            }
+        }
+        List<Comment> nodes=new ArrayList<>();
+        for(int i=n2;i>=0;i--){
+            Node child=childs.get(i);
+            if(child instanceof AnnotationDeclaration) continue;
+            if(!(child instanceof Comment)){
+                break;
+            }
+            nodes.add(0,(Comment)childs.get(i));
+        }
+
+        /*for(int i=n1;i<=n2;i++){
+            nodes.add((Comment)childs.get(i));
+        }*/
+        return nodes;
     }
 
     private String[] parseDesc(String desc){

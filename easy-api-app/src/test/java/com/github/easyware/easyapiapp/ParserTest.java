@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -205,15 +206,26 @@ public class ParserTest {
     }
 
     @Test
-    public void commentParserTest() {
+    public void commentParserTest() throws Exception{
         CommentParser commentParser = new CommentParser();
         File file=new File("/Users/apple/workspace/");
         //file=new File("/Users/apple/github/easy-api/easy-api-app/src/test/java/com/github/easyware/easyapiapp")
-        String group="group1";
+        List<String> groups=new ArrayList();
+        groups.add("group1");
+        commentParser.initGroups(groups);
+        String group=groups.get(0);
         commentParser.parseDir(group,file);
 
         System.out.println(JSON.toJSONString(commentParser.getMethodComments(group), true));
         System.out.println("------------------------------");
         System.out.println(JSON.toJSONString(commentParser.getClassComments(group), true));
+    }
+    @Test
+    public void commentParserFileTest() throws Exception {
+        CommentParser commentParser = new CommentParser();
+        List<String> groups=new ArrayList();
+        groups.add("group1");
+        commentParser.initGroups(groups);
+        commentParser.parseFile(groups.get(0),new File("/Users/apple/workspace/ershouji/wapmanage-api/src/main/java/com/cehome/jishou/wapmanage_api/controller/financialInput/FinancialInputController.java"));
     }
 }

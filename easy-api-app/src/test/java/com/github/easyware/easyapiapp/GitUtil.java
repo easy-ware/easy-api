@@ -62,14 +62,15 @@ public class GitUtil {
 
 	public static void main(String[] args) throws Exception {
 		String uri = "https://github.com/easy-ware/easy-api.git";
-		String username = "XXX";
-		String password = "123456";
+		String username = "";//"XXX";
+		String password = "";//"123456";
 		CredentialsProvider credentialsProvider = getCredentialsProvider(username, password);
 		String localDir =System.getProperty("java.io.tmpdir")+"/easy-api";
 		System.out.println("-------------------"+localDir);
 		Git git = getGit(uri, credentialsProvider, localDir);
 		PullResult pullResult=	pull(git, credentialsProvider);
 		System.out.println(pullResult);
+
 		diff(git);
 		//push(git, credentialsProvider, ".", "提交文件");
 
