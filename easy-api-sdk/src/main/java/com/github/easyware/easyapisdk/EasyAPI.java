@@ -61,14 +61,17 @@ public class EasyAPI  {
     private JSONObject groupMethods;
     private JSONObject groupClasses;
     RequestMappingHandlerMapping handlerMapping;
-    String projectTitle;
+    /*String projectTitle;
     String projectUrl;
-    String easyAPIServerUrl;
-    public EasyAPI(RequestMappingHandlerMapping handlerMapping,String projectTitle,String projectUrl, String easyAPIServerUrl){
-        this.projectTitle=projectTitle;
+    String easyAPIServerUrl;*/
+    private EasyAPIConfig  config;
+    public EasyAPI(RequestMappingHandlerMapping handlerMapping,EasyAPIConfig  config){
+
+       /* this.projectTitle=projectTitle;
         this.projectUrl=projectUrl;
-        this.easyAPIServerUrl=easyAPIServerUrl;
+        this.easyAPIServerUrl=easyAPIServerUrl;*/
         this.handlerMapping=handlerMapping;
+        this.config=config;
     }
 
     //@Autowired
@@ -119,18 +122,27 @@ public class EasyAPI  {
 
         long t=System.currentTimeMillis();
 
-        groupMethods=Global.httpGetObject(easyAPIServerUrl+"/methods",180L);
-        groupClasses=Global.httpGetObject(easyAPIServerUrl+"/classes",180L);
+        String groupUrl=config.getEasyAPIAppUrl();
+        if(!groupUrl.endsWith("/")) groupUrl+="/";
+        groupUrl+=config.getEasyAPIAppGroup();
+        groupMethods=Global.httpGetObject(groupUrl+"/methods",config.getCommentCacheSeconds());
+        groupClasses=Global.httpGetObject(groupUrl+"/classes",config.getCommentCacheSeconds());
 
         OpenAPI openAPI = new OpenAPI();
         Info info = new Info();
-        info.version("1.0.0").title(projectTitle);//"wap-m");
-        Server server = new Server();
-        server.url(projectUrl);//"http://wapmanageapi.test.tiebaobei.com/wapmanageApi");
+        info.version("1.0.0").title(config.getTitle());//"wap-m");
+        List<Server> servers=new ArrayList<>();
+        for(String url:config.getServerUrls()){
+            Server server = new Server();
+            server.url(url);//"http://wapmanageapi.test.tiebaobei.com/wapmanageApi");
+            servers.add(server);
+        }
+
+
         Paths paths = new Paths();
         Components allComponents = new Components();
 
-        openAPI.info(info).servers(Arrays.asList(server)).paths(paths).components(allComponents);
+        openAPI.info(info).servers(servers).paths(paths).components(allComponents);
 
         List<HashMap<String, String>> urlList = new ArrayList<HashMap<String, String>>();
 
@@ -216,7 +228,7 @@ public class EasyAPI  {
         filter.getExcludes().add("exampleSetFlag");
         logger.info("cost {}ms",(System.currentTimeMillis()-t));
         data= JSON.toJSONString(openAPI, filter, SerializerFeature.PrettyFormat);// openAPI.toString();
-        Global.addCache(cacheKey,data,60);
+        Global.addCache(cacheKey,data,config.getCacheSeconds());
         return data;
 
     }
