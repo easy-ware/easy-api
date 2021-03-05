@@ -72,6 +72,8 @@ public class EasyAPI  {
         this.easyAPIServerUrl=easyAPIServerUrl;*/
         this.handlerMapping=handlerMapping;
         this.config=config;
+        if(!StringUtils.hasText(config.getEasyAPIAppUrl())) throw new RuntimeException("easyAPIAppUrl need");
+        if(!StringUtils.hasText(config.getEasyAPIAppGroup()))throw new RuntimeException("easyAPIAppGroup need");
     }
 
     //@Autowired
