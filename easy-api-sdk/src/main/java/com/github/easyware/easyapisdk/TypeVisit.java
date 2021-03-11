@@ -8,10 +8,13 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.*;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class TypeVisit<T> {
     TypeVisitCallback<T> typeVisitCallback;
+    Set<String> classSet=new HashSet<>();
 
     public TypeVisit(TypeVisitCallback<T> typeVisitCallback) {
         this.typeVisitCallback = typeVisitCallback;
@@ -90,13 +93,12 @@ public class TypeVisit<T> {
         //System.out.println(prefix + propName + ":" + propClass.getName());
 
         T current=typeVisitCallback.callback(parent, propName, propClass, array, null);
-        //--第一次：根对象
-        /*if( parent==null){
-            typeVisitCallback.callback(null, propName, propClass, array, null);
-            current=parent;
-        }else{
-            current =  typeVisitCallback.callback(parent, propName, propClass, array, null);
-        }*/
+        //avoid loop reference
+        if(!classSet.add(propClass.getName())){
+            System.out.println("class exists: "+propClass.getName());
+            return;
+        }
+
 
         BeanInfo bi = Introspector.getBeanInfo(propClass);
         PropertyDescriptor[] pds = bi.getPropertyDescriptors();
