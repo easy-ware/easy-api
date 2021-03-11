@@ -1,5 +1,7 @@
 package com.github.easyware.easyapisdk;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,25 +28,25 @@ public abstract class AbstractEasyAPIController  {
      * @throws Exception
      */
     @RequestMapping(value = "/easyapi")
-    public String easyapi(String[] q,String url,HttpServletResponse response) throws Exception {
+    public JSONObject easyapi(String[] q, String url, HttpServletResponse response) throws Exception {
         //return new EasyAPI(handlerMapping,"wapmanage-api","http://wapmanageapi.test.tiebaobei.com/wapmanageApi","http://localhost:7070/group1").getDoc(search);
         if(!canRun()) return null;
         response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
         response.setHeader("Access-Control-Allow-Headers", "Content-Type, api_key, Authorization");
         EasyAPIConfig  config=getEasyAPIConfig();
-        return new EasyAPI(handlerMapping, config).getDoc(q,url);
+        return JSON.parseObject(new EasyAPI(handlerMapping, config).getDoc(q,url));
     }
 
     @RequestMapping(value = "/easyapiDemo")
-    public String easyapiDemo(HttpServletResponse response) {
+    public JSONObject easyapiDemo(HttpServletResponse response) {
         if(!canRun()) return null;
         //Access-Control-Allow-*
         response.setHeader("Access-Control-Allow-Origin", "*");
 
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
         response.setHeader("Access-Control-Allow-Headers", "Content-Type, api_key, Authorization");
-        return "{\n" +
+        return JSON.parseObject("{\n" +
                 "  \"openapi\": \"3.0.0\",\n" +
                 "  \"info\": {\n" +
                 "    \"version\": \"1.0.0\",\n" +
@@ -220,6 +222,6 @@ public abstract class AbstractEasyAPIController  {
                 "      }\n" +
                 "    }\n" +
                 "  }\n" +
-                "}";
+                "}");
     }
 }
