@@ -115,12 +115,29 @@ public class EasyAPI  {
        }
        return result.toArray(new String[0]);
     }
-
     public String getDoc(String[] search,String urlMatch) throws Exception {
         search=trim(search);
         String cacheKey=getKey(search,urlMatch);
         String data=Global.getCache(cacheKey);
         if(data!=null) return data;
+        SimplePropertyPreFilter filter = new SimplePropertyPreFilter();
+        filter.getExcludes().add("exampleSetFlag");
+        data= JSON.toJSONString( doOpenAPI(  search,  urlMatch), filter, SerializerFeature.PrettyFormat);// openAPI.toString();
+        Global.addCache(cacheKey,data,config.getCacheSeconds());
+        return data;
+    }
+    public OpenAPI getOpenAPI(String[] search,String urlMatch) throws Exception {
+        search=trim(search);
+        String cacheKey=getKey(search,urlMatch);
+        OpenAPI data=Global.getCache(cacheKey);
+        if(data!=null) return data;
+        data=doOpenAPI(search,urlMatch);
+        Global.addCache(cacheKey,data,config.getCacheSeconds());
+        return data;
+
+    }
+    private OpenAPI doOpenAPI(String[] search,String urlMatch) throws Exception {
+
 
         long t=System.currentTimeMillis();
 
@@ -226,12 +243,9 @@ public class EasyAPI  {
 
         }
 
-        SimplePropertyPreFilter filter = new SimplePropertyPreFilter();
-        filter.getExcludes().add("exampleSetFlag");
         logger.info("cost {}ms",(System.currentTimeMillis()-t));
-        data= JSON.toJSONString(openAPI, filter, SerializerFeature.PrettyFormat);// openAPI.toString();
-        Global.addCache(cacheKey,data,config.getCacheSeconds());
-        return data;
+
+        return openAPI;
 
     }
 

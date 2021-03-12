@@ -15,11 +15,13 @@ import java.util.Set;
 public class TypeVisit<T> {
     TypeVisitCallback<T> typeVisitCallback;
     Set<String> classSet=new HashSet<>();
+    private Type type;
 
     public TypeVisit(TypeVisitCallback<T> typeVisitCallback) {
         this.typeVisitCallback = typeVisitCallback;
     }
     public void visit(Type type) throws IntrospectionException {
+        this.type=type;
         visit(null,type,false,null);
     }
     protected void visit(T parent, Type type, boolean array, String prop) throws IntrospectionException {
@@ -95,7 +97,7 @@ public class TypeVisit<T> {
         T current=typeVisitCallback.callback(parent, propName, propClass, array, null);
         //avoid loop reference
         if(!classSet.add(propClass.getName())){
-            System.out.println("class exists: "+propClass.getName());
+            System.out.println("root type="+type+", class exists="+propClass.getName());
             return;
         }
 

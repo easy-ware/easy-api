@@ -28,25 +28,26 @@ public abstract class AbstractEasyAPIController  {
      * @throws Exception
      */
     @RequestMapping(value = "/easyapi")
-    public JSONObject easyapi(String[] q, String url, HttpServletResponse response) throws Exception {
+    public Object easyapi(String[] q, String url, HttpServletResponse response) throws Exception {
         //return new EasyAPI(handlerMapping,"wapmanage-api","http://wapmanageapi.test.tiebaobei.com/wapmanageApi","http://localhost:7070/group1").getDoc(search);
         if(!canRun()) return null;
         response.setHeader("Access-Control-Allow-Origin", "*");
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
         response.setHeader("Access-Control-Allow-Headers", "Content-Type, api_key, Authorization");
         EasyAPIConfig  config=getEasyAPIConfig();
-        return JSON.parseObject(new EasyAPI(handlerMapping, config).getDoc(q,url));
+        return new EasyAPI(handlerMapping, config).getDoc(q,url);
+        //return JSON.parseObject(new EasyAPI(handlerMapping, config).getDoc(q,url));
     }
 
     @RequestMapping(value = "/easyapiDemo")
-    public JSONObject easyapiDemo(HttpServletResponse response) {
+    public String easyapiDemo(HttpServletResponse response) {
         if(!canRun()) return null;
         //Access-Control-Allow-*
         response.setHeader("Access-Control-Allow-Origin", "*");
 
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
         response.setHeader("Access-Control-Allow-Headers", "Content-Type, api_key, Authorization");
-        return JSON.parseObject("{\n" +
+        return "{\n" +
                 "  \"openapi\": \"3.0.0\",\n" +
                 "  \"info\": {\n" +
                 "    \"version\": \"1.0.0\",\n" +
@@ -222,6 +223,6 @@ public abstract class AbstractEasyAPIController  {
                 "      }\n" +
                 "    }\n" +
                 "  }\n" +
-                "}");
+                "}";
     }
 }
