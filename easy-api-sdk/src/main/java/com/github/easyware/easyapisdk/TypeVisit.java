@@ -15,13 +15,13 @@ import java.util.Set;
 public class TypeVisit<T> {
     TypeVisitCallback<T> typeVisitCallback;
     Set<String> classSet=new HashSet<>();
-    private Type type;
+    private Type rootType;
 
     public TypeVisit(TypeVisitCallback<T> typeVisitCallback) {
         this.typeVisitCallback = typeVisitCallback;
     }
     public void visit(Type type) throws IntrospectionException {
-        this.type=type;
+        this.rootType =type;
         visit(null,type,false,null);
     }
     protected void visit(T parent, Type type, boolean array, String prop) throws IntrospectionException {
@@ -37,10 +37,10 @@ public class TypeVisit<T> {
                 String base = Global.getBase(clazz);
                 if (base != null) {
                     //System.out.println(prefix + prop + ":" + base);
-                    typeVisitCallback.callback(parent, prop, clazz, array, base);
+                    typeVisitCallback.callback(parent, prop, type,clazz, array, base);
 
                 } else {
-                    visitObject(parent, prop, clazz, array,argTypes);
+                    visitObject(parent, prop,type, clazz, argTypes,array);
                 }
             }
 
@@ -53,7 +53,7 @@ public class TypeVisit<T> {
             clazz = (Class) pType.getRawType();
             //泛型信息
             argTypes = pType.getActualTypeArguments();
-            visitObject(parent, prop, clazz, array,argTypes);
+            visitObject(parent, prop, type,clazz, argTypes,array);
         }//数组泛型
         else if (type instanceof GenericArrayType) {
             GenericArrayType aType = (GenericArrayType) type;
@@ -67,42 +67,42 @@ public class TypeVisit<T> {
     }
 
 
-    private void visitObject(T parent, String propName, Class propClass,  boolean array, Type[] argTypes) throws IntrospectionException {
-        System.out.println("--------class:"+propClass.getName());
-        if(propClass.equals(Class.class)){
+    private void visitObject(T parent, String propName, Type sourceType, Class sourceClass,Type[] genTypes ,boolean array) throws IntrospectionException {
+        System.out.println("--------class:"+sourceClass.getName());
+        if(sourceClass.equals(Class.class)){
             System.out.println("ignore Class.class");
             return;
         }
         //类的泛型参数 T K
-        TypeVariable[] varTypes = propClass.getTypeParameters();
-        TypeResolver typeResolver = getTypeResolver(varTypes, argTypes);
+        TypeVariable[] varTypes = sourceClass.getTypeParameters();
+        TypeResolver typeResolver = getTypeResolver(varTypes, genTypes);
 
 
-        if (Collection.class.isAssignableFrom(propClass)) {
+        if (Collection.class.isAssignableFrom(sourceClass)) {
             //System.out.println("array");
-            if (argTypes != null) {
-                visit(parent, argTypes[0], true, propName + "[]");
+            if (genTypes != null) {
+                visit(parent, genTypes[0], true, propName + "[]");
             } else {
                 visit(parent, Object.class, true, propName + "[]");
                 //System.out.println(prefix + prop + "[]:Object");
             }
             return;
 
-        } else if (Map.class.isAssignableFrom(propClass)) {
+        } else if (Map.class.isAssignableFrom(sourceClass)) {
             System.out.println("not support Map");
             return;
         }
         //System.out.println(prefix + propName + ":" + propClass.getName());
 
-        T current=typeVisitCallback.callback(parent, propName, propClass, array, null);
+        T current=typeVisitCallback.callback(parent, propName,sourceType, sourceClass, array, null);
         //avoid loop reference
-        if(!classSet.add(propClass.getName())){
-            System.out.println("root type="+type+", class exists="+propClass.getName());
+        if(!classSet.add(sourceClass.getName())){
+            System.out.println("root type="+ rootType +", class exists="+sourceClass.getName());
             return;
         }
 
 
-        BeanInfo bi = Introspector.getBeanInfo(propClass);
+        BeanInfo bi = Introspector.getBeanInfo(sourceClass);
         PropertyDescriptor[] pds = bi.getPropertyDescriptors();
         //遍历类属性
         for (PropertyDescriptor pd : pds) {

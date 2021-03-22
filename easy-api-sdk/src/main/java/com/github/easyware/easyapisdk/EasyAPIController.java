@@ -291,7 +291,7 @@ public class EasyAPIController implements BeanFactoryAware {
         }
 
         @Override
-        public Schema callback(Schema parent, String prop, Class clazz, boolean array, String baseDataType) {
+        public Schema callback(Schema parent, String prop, Type sourceType,Class clazz, boolean array, String baseDataType) {
 
             //-- 参数的schema
             Schema schema = new Schema();
@@ -312,10 +312,10 @@ public class EasyAPIController implements BeanFactoryAware {
                 return schema;
 
             } else {
-                schema.$ref("#/components/schemas/" + clazz.getName());//"$ref": "#/components/schemas/Pets"
+                schema.$ref("#/components/schemas/" + sourceType);//"$ref": "#/components/schemas/Pets"
                 //-- 组件里面的schema
                 ObjectSchema objectSchema = new ObjectSchema();
-                components.addSchemas(clazz.getName(), objectSchema);
+                components.addSchemas(sourceType.toString(), objectSchema);
                 return objectSchema;
             }
 

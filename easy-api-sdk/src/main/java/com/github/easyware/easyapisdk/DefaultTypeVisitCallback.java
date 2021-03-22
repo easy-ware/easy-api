@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.media.*;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,7 +42,7 @@ public  class DefaultTypeVisitCallback implements TypeVisitCallback<DefaultTypeV
         }
 
         @Override
-        public DefaultTypeVisitObject callback(DefaultTypeVisitObject parent, String prop, Class clazz, boolean array, String baseDataType) {
+        public DefaultTypeVisitObject callback(DefaultTypeVisitObject parent, String prop, Type sourceType, Class clazz, boolean array, String baseDataType) {
 
             //-- 参数的schema
             Schema schema = new Schema();
@@ -75,10 +76,10 @@ public  class DefaultTypeVisitCallback implements TypeVisitCallback<DefaultTypeV
                // return schema;
 
             } else {
-                schema.$ref("#/components/schemas/" + clazz.getName());//"$ref": "#/components/schemas/Pets"
+                schema.$ref("#/components/schemas/" + sourceType);//"$ref": "#/components/schemas/Pets"
                 //-- 组件里面的schema
                 ObjectSchema objectSchema = new ObjectSchema();
-                components.addSchemas(clazz.getName(), objectSchema);
+                components.addSchemas(sourceType.toString(), objectSchema);
                 current.setSchema(objectSchema);
                 //return objectSchema;
             }
