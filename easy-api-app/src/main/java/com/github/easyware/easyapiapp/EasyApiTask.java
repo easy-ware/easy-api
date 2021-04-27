@@ -27,7 +27,7 @@ public class EasyApiTask implements InitializingBean {
     public void afterPropertiesSet() throws Exception {
         commentParser.initGroups(sourceMan.getGroupMap().keySet());
     }
-   // @Scheduled(fixedDelay = 1000*180)
+    @Scheduled(fixedDelay = 1000*180)
     public void svnUpdate() throws Exception{
         logger.info("update svn files");
 
@@ -52,7 +52,7 @@ public class EasyApiTask implements InitializingBean {
         // task execution logic
     }
 
-   // @Scheduled(fixedDelay = 1000*1800)
+    @Scheduled(fixedDelay = 1000*1800)
     public void fullUpdate() throws Exception{
         logger.info("full update");
 
