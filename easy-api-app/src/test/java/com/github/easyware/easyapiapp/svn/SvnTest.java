@@ -14,6 +14,9 @@ import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
 import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.wc.*;
+import org.tmatesoft.svn.core.wc2.SvnCleanup;
+import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
+import org.tmatesoft.svn.core.wc2.SvnTarget;
 
 import java.io.File;
 
@@ -61,5 +64,18 @@ public class SvnTest {
         svnClientManager.getUpdateClient().doCheckout( SVNURL.parseURIEncoded(svnRoot ),
                 new File("/data/svn"), SVNRevision.HEAD,SVNRevision.HEAD, SVNDepth.INFINITY,true);
         System.out.println("end");
+    }
+
+    @Test
+    public void test2() throws SVNException {
+        SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+       // svnOperationFactory.setAuthenticationManager(repo.getAuthenticationManager());
+       // svnOperationFactory.setOptions(new DefaultSVNOptions());
+        SvnCleanup svnCleanup=  svnOperationFactory.createCleanup();
+        svnCleanup.setBreakLocks(true);
+        svnCleanup.addTarget(SvnTarget.fromFile( new File("/data/openapi/group1/s11")));
+        //SvnCommit commit = svnOperationFactory.createCommit();
+        //commit.addTarget(SvnTarget.fromFile(new File("D:/SVN/Temp/"+tmpPath)));
+        svnCleanup.run();
     }
 }

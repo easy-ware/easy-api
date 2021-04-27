@@ -1,6 +1,6 @@
 package com.github.easyware.easyapiapp;
 
-import com.github.easyware.easyapiapp.object.SvnSource;
+import com.github.easyware.easyapiapp.object.SourceConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -17,7 +17,7 @@ import java.util.List;
 public class EasyApiTask implements InitializingBean {
     private static Logger logger= LoggerFactory.getLogger(EasyApiTask.class);
     @Autowired
-    SvnClient svnClient;
+    SourceMan sourceMan;
     @Autowired
     CommentParser commentParser;
     @Value("${saveRoot}")
@@ -25,17 +25,17 @@ public class EasyApiTask implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        commentParser.initGroups(svnClient.getGroupMap().keySet());
+        commentParser.initGroups(sourceMan.getGroupMap().keySet());
     }
-    @Scheduled(fixedDelay = 1000*180)
+   // @Scheduled(fixedDelay = 1000*180)
     public void svnUpdate() throws Exception{
         logger.info("update svn files");
 
-        svnClient.getGroupMap().forEach((group,svnSources)->{
-            for(SvnSource svnSource:svnSources) {
+        sourceMan.getGroupMap().forEach((group, sourcesConf)->{
+            for(SourceConf sourceConf : sourcesConf) {
 
                 try {
-                    List<File> files = svnClient.update(group, svnSource);
+                    List<File> files = sourceMan.update(group, sourceConf);
                     for(File file :files){
                         commentParser.parseFile(group,file);
                     }
@@ -52,11 +52,11 @@ public class EasyApiTask implements InitializingBean {
         // task execution logic
     }
 
-    @Scheduled(fixedDelay = 1000*1800)
+   // @Scheduled(fixedDelay = 1000*1800)
     public void fullUpdate() throws Exception{
         logger.info("full update");
 
-        for(String group : svnClient.getGroupMap().keySet()) {
+        for(String group : sourceMan.getGroupMap().keySet()) {
             commentParser.parseDir(group,new File(saveRoot,group));
             logger.info("method size=" + commentParser.getMethodComments(group).size());
             logger.info("entity size=" + commentParser.getClassComments(group).size());

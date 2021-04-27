@@ -1,6 +1,6 @@
 package com.github.easyware.easyapiapp;
 
-import com.github.easyware.easyapiapp.object.SvnSource;
+import com.github.easyware.easyapiapp.object.SourceConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -18,6 +18,8 @@ import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl;
 import org.tmatesoft.svn.core.internal.wc.DefaultSVNOptions;
 import org.tmatesoft.svn.core.wc.*;
 import org.tmatesoft.svn.core.wc2.SvnCleanup;
+import org.tmatesoft.svn.core.wc2.SvnOperationFactory;
+import org.tmatesoft.svn.core.wc2.SvnTarget;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -32,42 +34,17 @@ public class SvnClient implements InitializingBean {
     //
     @Autowired
     private Environment env;
-    Map<String, SvnSource[]>  groupMap=new ConcurrentHashMap<>();
+    Map<String, SourceConf[]>  groupMap=new ConcurrentHashMap<>();
     Map<String,SVNClientManager> manMap =new ConcurrentHashMap<>();
     @Value("${saveRoot}")
     String saveRoot;
 
-    public Map<String, SvnSource[]> getGroupMap() {
+    public Map<String, SourceConf[]> getGroupMap() {
         return groupMap;
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-
-        String prop= env.getProperty("groups");
-        if(prop==null){
-            logger.warn("'groups' not found in config");
-            return;
-        }
-        String[] groups=prop.split(",");
-        for(String group:groups){
-            prop=env.getProperty(group+".sources");
-            String[] sources=prop.split(",");
-
-            SvnSource[] svnSources=new SvnSource[sources.length];
-            for(int i=0;i<sources.length;i++){
-                SvnSource svnSource=new SvnSource();
-                svnSource.setName(sources[i]);
-                String[] items= env.getProperty(sources[i]).split(",");
-                svnSource.setUrl(items[0]);
-                svnSource.setUsername(items[1]);
-                svnSource.setPassword(items[2]);
-                svnSources[i]=svnSource;
-            }
-
-            groupMap.put(group,svnSources);
-        }
-
 
         DAVRepositoryFactory.setup();
         SVNRepositoryFactoryImpl.setup();
@@ -94,12 +71,12 @@ public class SvnClient implements InitializingBean {
    }
 
 
-    public List<File> update(String group,SvnSource svnSource) throws SVNException {
+    public List<File> update(String group, SourceConf sourceConf) throws SVNException {
 
-        SVNURL svnURL=SVNURL.parseURIEncoded(svnSource.getUrl());// "svn://192.168.0.19/common/branches/test";
-        SVNClientManager man=getSVNClientManager(svnSource.getUsername(),svnSource.getPassword());
+        SVNURL svnURL=SVNURL.parseURIEncoded(sourceConf.getUrl());// "svn://192.168.0.19/common/branches/test";
+        SVNClientManager man=getSVNClientManager(sourceConf.getUsername(), sourceConf.getPassword());
         File savePath=new File(env.getProperty("saveRoot"),group);
-        savePath=new File(savePath,svnSource.getName());
+        savePath=new File(savePath, sourceConf.getName());
         savePath.mkdirs();
         List<File> result=new ArrayList<>();
         man.setEventHandler(new ISVNEventHandler() {
@@ -132,9 +109,39 @@ public class SvnClient implements InitializingBean {
         }*/
         /*svnClientManager.getUpdateClient().doUpdate(  new File("/data/svn"),
                 SVNRevision.HEAD, SVNDepth.INFINITY, true,true   );*/
-        man.getUpdateClient().doCheckout( svnURL,
-                savePath, SVNRevision.HEAD,SVNRevision.HEAD, SVNDepth.INFINITY,true);
-        System.out.println("end");
+        try {
+            man.getUpdateClient().doCheckout(svnURL,
+                    savePath, SVNRevision.HEAD, SVNRevision.HEAD, SVNDepth.INFINITY, true);
+            //System.out.println("end");
+        }catch (SVNException e){
+
+           //org.tmatesoft.svn.core.SVNException: svn: E155004: There are unfinished work items in '/data/openapi/group1/s11'; run 'svn cleanup' first.
+            if(e.getErrorMessage()!=null &&  e.getErrorMessage().getErrorCode().getCode()==155004){
+                    logger.error(e.getMessage());
+                   logger.info("cleanup "+savePath);
+                   cleanup(savePath);
+                   logger.info("update again for "+savePath);
+                   man.getUpdateClient().doCheckout(svnURL,
+                           savePath, SVNRevision.HEAD, SVNRevision.HEAD, SVNDepth.INFINITY, true);
+
+
+            }else {
+                logger.error("", e);
+            }
+           // svnException.getErrorMessage().getErrorCode().getCode()
+        }
         return result;
+    }
+
+    public void cleanup(File dir) throws SVNException {
+        SvnOperationFactory svnOperationFactory = new SvnOperationFactory();
+        // svnOperationFactory.setAuthenticationManager(repo.getAuthenticationManager());
+        // svnOperationFactory.setOptions(new DefaultSVNOptions());
+        SvnCleanup svnCleanup=  svnOperationFactory.createCleanup();
+        svnCleanup.setBreakLocks(true);
+        svnCleanup.addTarget(SvnTarget.fromFile( dir));
+        //SvnCommit commit = svnOperationFactory.createCommit();
+        //commit.addTarget(SvnTarget.fromFile(new File("D:/SVN/Temp/"+tmpPath)));
+        svnCleanup.run();
     }
 }
