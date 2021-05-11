@@ -8,7 +8,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-public  class DefaultTypeVisitCallback implements TypeVisitCallback<DefaultTypeVisitObject> {
+public  class DefaultTypeVisitCallback implements TypeVisitCallback<ComponentHolder> {
         Components components;
         Schema root;
 
@@ -42,50 +42,139 @@ public  class DefaultTypeVisitCallback implements TypeVisitCallback<DefaultTypeV
         }
 
         @Override
-        public DefaultTypeVisitObject callback(DefaultTypeVisitObject parent, String prop, Type sourceType, Class clazz, boolean array, String baseDataType) {
+        public ComponentHolder callback(ComponentHolder parent, String prop, Type sourceType, Class clazz, boolean array, String baseDataType) {
 
-            //-- 参数的schema
-            Schema schema = new Schema();
-            DefaultTypeVisitObject current=new DefaultTypeVisitObject();
-            JSONObject comments= getComments(clazz);
-            current.setPropComments(comments);
+             if(parent==null) return callbackRoot(prop,sourceType,clazz,array,baseDataType);
 
-            String desc=null;
-            if(parent!=null && parent.getPropComments()!=null) desc=parent.getPropComments().getString(prop);
-
-            if (array) {
-                ArraySchema arraySchema = new ArraySchema();
-                arraySchema.items(schema);
-                arraySchema.description(desc);
-                if (parent == null) root = arraySchema;
-                else parent.getSchema().addProperties(prop, arraySchema);
-
-
-            } else {
-                schema.description(desc);
-                if (parent == null) root = schema;
-                else parent.getSchema().addProperties(prop, schema);
-            }
-
-            if (baseDataType != null) {
-                //System.out.println("ba="+baseDataType);
-                String[] dataType = Global.dataTypeMap.get(baseDataType);
-                schema.type(dataType[0]);
-                schema.format(dataType[1]);
-                current.setSchema(schema);
-               // return schema;
-
-            } else {
-                schema.$ref("#/components/schemas/" + sourceType);//"$ref": "#/components/schemas/Pets"
-                //-- 组件里面的schema
-                ObjectSchema objectSchema = new ObjectSchema();
-                components.addSchemas(sourceType.toString(), objectSchema);
-                current.setSchema(objectSchema);
-                //return objectSchema;
-            }
-
-            return current;
+            return callbackComponent(parent,prop,sourceType,clazz,array,baseDataType);
 
 
         }
+
+    /**
+     *"responses": {
+     * 					"200": {
+     * 						"content": {
+     * 							"application/json": {
+     * 								"schema": {
+     * 									"$ref": "#/components/schemas/com.cehome.jishou.mobile_api.entity.Result>"
+     *                                                                }* 							}
+     * 						}
+     *
+     * @param prop
+     * @param sourceType
+     * @param clazz
+     * @param array
+     * @param baseDataType
+     * @return
+     */
+    public ComponentHolder callbackRoot(String prop, Type sourceType, Class clazz, boolean array, String baseDataType) {
+
+        //-- 参数的schema
+        Schema schema = new Schema();
+        root = array?createArraySchema(schema):schema;
+
+        if (baseDataType != null) {
+            setBaseData(schema,baseDataType);
+            return null;
+
+        } else {
+            schema.$ref("#/components/schemas/" + sourceType);//"$ref": "#/components/schemas/Pets"
+
+            //-- 组件里面的schema
+            return createEmptyComponent(sourceType,clazz);
+
+        }
+
+    }
+
+   private ComponentHolder createEmptyComponent(Type sourceType, Class clazz){
+       if(componentExists(sourceType)){
+           return null;
+       }
+        //-- 组件里面的schema
+        ComponentHolder current=new ComponentHolder();
+        JSONObject comments= getComments(clazz);
+        current.setPropComments(comments);
+        //
+        ObjectSchema componentSchema = new ObjectSchema();
+        components.addSchemas(sourceType.toString(), componentSchema);
+        current.setSchema(componentSchema);
+        return current;
+    }
+
+    /**
+     * "components": {
+     * 		"schemas": {
+     * 			"com.cehome.jishou.mobile_api.entity.Result>": {
+     * 				"properties": {
+     * 					"msg": {
+     * 						"type": "string"
+     *                                        },
+     * 					"result[]": {
+     * 						"items": {
+     * 							"$ref": "#/components/schemas/class com.cehome.jishou.mobile_api.entity.ProductBrandModels"
+     *                        },
+     * 						"type": "array"
+     *                    },
+     * 					"ret": {
+     * 						"format": "int32",
+     * 						"type": "integer"
+     *                    }* 				},
+     * 				"type": "object"* 			}
+     * @param parent
+     * @param prop
+     * @param sourceType
+     * @param clazz
+     * @param array
+     * @param baseDataType
+     * @return
+     */
+    public ComponentHolder callbackComponent(ComponentHolder parent, String prop, Type sourceType, Class clazz, boolean array, String baseDataType) {
+
+        //-- 参数的schema
+        Schema schema = new Schema();
+
+        String desc=null;
+        if(parent!=null && parent.getPropComments()!=null) desc=parent.getPropComments().getString(prop);
+
+        Schema  wrap = array?createArraySchema(schema):schema;
+        wrap.description(desc);
+        parent.getSchema().addProperties(prop, wrap);
+
+
+        if (baseDataType != null) {
+            setBaseData(schema,baseDataType);
+            return null;
+
+        } else {
+            schema.$ref("#/components/schemas/" + sourceType);//"$ref": "#/components/schemas/Pets"
+            //-- 组件里面的schema
+            return createEmptyComponent(sourceType,clazz);
+
+        }
+
+
+
+
+    }
+
+    private boolean componentExists(Type sourceType){
+        return components.getSchemas() !=null && components.getSchemas().get(sourceType.toString())!=null;
+    }
+
+    private void setBaseData(Schema schema,String baseDataType){
+        String[] dataType = Global.dataTypeMap.get(baseDataType);
+        schema.type(dataType[0]);
+        schema.format(dataType[1]);
+
+    }
+
+    private ArraySchema createArraySchema(Schema schema){
+        ArraySchema arraySchema = new ArraySchema();
+        arraySchema.items(schema);
+        return arraySchema;
+    }
+
+
     }

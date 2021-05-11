@@ -40,8 +40,8 @@ import java.lang.reflect.Type;
 import java.util.*;
 
 //@RestController
-public class EasyAPIController implements BeanFactoryAware {
-    private static Logger logger = LoggerFactory.getLogger(EasyAPIController.class);
+public class EasyAPIController {
+    /*private static Logger logger = LoggerFactory.getLogger(EasyAPIController.class);
     private static String CONTENT_TYPE_JSON = "application/json";
     private static Class errorControllerClass;
     static {
@@ -163,7 +163,7 @@ public class EasyAPIController implements BeanFactoryAware {
 
 
 
-            /*hashMap.put("className", method.getMethod().getDeclaringClass().getName()); // 类名
+            *//*hashMap.put("className", method.getMethod().getDeclaringClass().getName()); // 类名
             hashMap.put("method", method.getMethod().getName()); // 方法名
             RequestMethodsRequestCondition methodsCondition = mappingInfo.getMethodsCondition();
             String type = methodsCondition.toString();
@@ -171,7 +171,7 @@ public class EasyAPIController implements BeanFactoryAware {
                 type = type.substring(1, type.length() - 1);
                 hashMap.put("type", type); // 方法名
             }
-            urlList.add(hashMap);*/
+            urlList.add(hashMap);*//*
         }
         return JSON.toJSONString(openAPI, true);// openAPI.toString();
 
@@ -373,7 +373,7 @@ public class EasyAPIController implements BeanFactoryAware {
         return false;
     }
 
-    private String[] getDataType(Type type) {
+    *//*private String[] getDataType(Type type) {
         if (type instanceof Class) {
             Class c = (Class) type;
             String s = Global.getBase(c);
@@ -383,7 +383,7 @@ public class EasyAPIController implements BeanFactoryAware {
         }
         return null;
 
-    }
+    }*//*
 
 
     @RequestMapping(value = "/pet")
@@ -576,5 +576,5 @@ public class EasyAPIController implements BeanFactoryAware {
     public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
         AbstractAutowireCapableBeanFactory f = (AbstractAutowireCapableBeanFactory) beanFactory;
         // f.getd
-    }
+    }*/
 }

@@ -95,6 +95,10 @@ public class TypeVisit<T> {
         //System.out.println(prefix + propName + ":" + propClass.getName());
 
         T current=typeVisitCallback.callback(parent, propName,sourceType, sourceClass, array, null);
+        if(current==null){
+            System.out.println("root type="+ rootType +", class exists="+sourceClass.getName());
+            return;
+        }
         //avoid loop reference
         if(!classSet.add(sourceClass.getName())){
             System.out.println("root type="+ rootType +", class exists="+sourceClass.getName());
@@ -111,9 +115,6 @@ public class TypeVisit<T> {
 
             Class pc = pd.getPropertyType();
             if(pc.equals(Class.class)) continue;
-            if (name.equals("list3")) {
-                System.out.println("");
-            }
             //-- 是否基础类型
             /*String base = getBase(pc); //String[]  Demo<String>[]
             if (base != null) {

@@ -290,6 +290,9 @@ public class EasyAPI  {
 
             String bodyContentType=null;
             boolean required = false;
+
+            Type type = mp.getGenericParameterType();
+
             //-- 解析参数注解
             if (mp.hasParameterAnnotation(RequestHeader.class)) {
                 parameter.in("header");
@@ -321,10 +324,16 @@ public class EasyAPI  {
                     parameterName = annotation.value();
                 }
                 required = annotation != null && annotation.required() && annotation.defaultValue().equals(ValueConstants.DEFAULT_NONE);
+                // 数组类型的参数，转成逗号隔开的字符串。  则应该是基本类型数组int[]，转化成逗号隔开的请求参数 1,2,3
+                if(mp.getParameterType().isArray()){
+                   if(paramDesc==null) paramDesc="";
+                   paramDesc="array["+mp.getParameterType().getComponentType().getSimpleName()+"] "+paramDesc;
+                   type= String.class;//  mp.getParameterType().getComponentType();
+                   parameter.in("query");
+                }
                 //参数如果是对象类型，则设置为openapi中的RequestBody对象或者 parameter.in("body")，这样才会显示schema（包含说明），如果设为query则只显示example，不显示schema
                 //优先设置第一个对象为RequestBody,便于正确执行try it out；其它对象设置为parameter.in("body")，能显示schema，但不能正确执行try it out！！！
-                if(Global.getBase(mp.getParameterType())==null){
-
+                else if(Global.getBase(mp.getParameterType())==null){
                     if(!hasBody) {
                         bodyContentType = "application/x-www-form-urlencoded";
                         hasBody=true;
@@ -338,7 +347,6 @@ public class EasyAPI  {
             }
 
 
-            Type type = mp.getGenericParameterType();
             DefaultTypeVisitCallback typeVisitCallback = new DefaultTypeVisitCallback(components,groupClasses);
             new TypeVisit(typeVisitCallback).visit(type);
             Schema root = typeVisitCallback.root;
@@ -445,7 +453,14 @@ public class EasyAPI  {
         return false;
     }
 
-    private String[] getDataType(Type type) {
+    /*public static String getBaseEx(Class clazz) {
+        if(clazz.isArray() ){
+            clazz=clazz.getComponentType();
+        }
+        return Global.getBase(clazz);
+    }*/
+
+    /*private String[] getDataType(Type type) {
         if (type instanceof Class) {
             Class c = (Class) type;
             String s = Global.getBase(c);
@@ -455,7 +470,7 @@ public class EasyAPI  {
         }
         return null;
 
-    }
+    }*/
 
 
 

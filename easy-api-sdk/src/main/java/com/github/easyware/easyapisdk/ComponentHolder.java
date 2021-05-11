@@ -3,7 +3,7 @@ package com.github.easyware.easyapisdk;
 import com.alibaba.fastjson.JSONObject;
 import io.swagger.v3.oas.models.media.Schema;
 
-public class DefaultTypeVisitObject {
+public class ComponentHolder {
     private Schema schema;
     private JSONObject propComments;
 
